@@ -1,44 +1,298 @@
 <!DOCTYPE html>
-<html>
+<html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <title>Meteo</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #222;
-      color: white;
-      margin: 0;
-      padding: 20px;
-    }
-    .temp { font-size: 2.5em; margin-top: 10px; }
-    .desc { text-transform: capitalize; }
-  </style>
+<meta charset="UTF-8" />
+<title>Meteo con autocompletamento</title>
+<style>
+  body { font-family: Arial, sans-serif; background:#222; color:#fff; text-align:center; padding:20px; }
+  form { margin-bottom:20px; display:flex; justify-content:center; gap:10px; flex-wrap: wrap; }
+  input, select, button { padding:8px 12px; font-size:1em; border-radius:5px; border:none; }
+  input, select { min-width: 150px; }
+  button { background:#5780d1; color:#fff; cursor:pointer; transition: background 0.3s ease; }
+  button:hover { background:#4364b0; }
+  
+  /* Container orizzontale con scroll se serve */
+  .forecast {
+    display: flex;
+    flex-wrap: nowrap;
+    flex-direction: row;
+    gap: 12px;
+    justify-content: center;
+    padding-bottom: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: #5780d1 transparent;
+  }
+  .forecast::-webkit-scrollbar {
+    height: 8px;
+  }
+  .forecast::-webkit-scrollbar-thumb {
+    background-color: #5780d1;
+    border-radius: 4px;
+  }
+  
+  /* Card più piccola e pulita */
+  .day {
+    background: rgba(255,255,255,0.12);
+    padding: 8px 10px;
+    border-radius: 12px;
+    width: 95px;
+    box-shadow: 0 0 8px rgba(87,128,209,0.4);
+    user-select: none;
+    flex-shrink: 0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .day:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 12px rgba(87,128,209,0.7);
+  }
+  .day strong {
+    display: block;
+    font-size: 0.85em;
+    margin-bottom: 4px;
+    text-transform: capitalize;
+  }
+  .day img {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 6px;
+  }
+  .day div {
+    font-size: 0.9em;
+    line-height: 1.2em;
+  }
+  .suggestion-box {
+  position: relative;
+  background: transparent;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+  max-height: 200px; /* scroll se troppe città */
+  overflow-y: auto;
+  width: 100%; /* stessa larghezza dell'input */
+  z-index: 1000;
+  margin-top: 4px;
+  font-size: 14px;
+}
+
+.suggestion-box div {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.suggestion-box div:hover {
+  background: #f0f4ff; /* leggero azzurro */
+}
+
+.suggestion-box::-webkit-scrollbar {
+  width: 6px;
+}
+
+.suggestion-box::-webkit-scrollbar-thumb {
+  background: #5780d1;
+  border-radius: 3px;
+}
+
+.suggestion-box::-webkit-scrollbar-track {
+  background: transparent;
+}
+</style>
+
+</style>
 </head>
 <body>
-  <h2>Meteo a Roma</h2>
-  <div class="temp" id="temp">-- °C</div>
-  <div class="desc" id="desc">Caricamento...</div>
+  <h2>Previsioni Meteo</h2>
 
-  <script>
-    const apiKey = "cad1abd3561dd54c287bf9efa93c02be";
-    const city = "Rome";
-    const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric&lang=it`;
+  <form id="weatherForm" autocomplete="off">
+    <div>
+      <label for="country">Nazione (ISO2): </label><br />
+      <input list="countries" id="country" name="country" value="IT" required />
+      <datalist id="countries">
+        <option value="IT">Italia</option>
+        <option value="FR">Francia</option>
+        <option value="DE">Germania</option>
+        <option value="ES">Spagna</option>
+        <option value="US">USA</option>
+        <option value="GB">Regno Unito</option>
+        <option value="CN">Cina</option>
+        <option value="JP">Giappone</option>
+        <option value="BR">Brasile</option>
+        <option value="RU">Russia</option>
+        <!-- aggiungi tutte le nazioni che vuoi -->
+      </datalist>
+    </div>
 
-    async function getWeather() {
-      try {
-        const response = await fetch(url);
-        const data = await response.json();
-        document.getElementById("temp").textContent = `${Math.round(data.main.temp)} °C`;
-        document.getElementById("desc").textContent = data.weather[0].description;
-      } catch (error) {
-        document.getElementById("desc").textContent = "Errore nel caricamento";
-      }
+    <div class="input-wrapper">
+      <label for="city">Città: </label><br />
+      <input type="text" id="city" name="city" placeholder="Scrivi città..." required />
+      <div id="city-suggestions" style="display:none;" class="suggestion-box"></div>
+    </div>
+
+    <div>
+      <label for="startDate">Data inizio: </label><br />
+      <input type="date" id="startDate" name="startDate" value="" required />
+    </div>
+
+    <div>
+      <label for="days">Giorni (max 5): </label><br />
+      <input type="number" id="days" name="days" min="1" max="5" value="3" required />
+    </div>
+
+    <div style="align-self: flex-end;">
+      <button type="submit">Mostra meteo</button>
+    </div>
+  </form>
+
+  <div id="forecast" class="forecast">Inserisci città e premi Mostra meteo</div>
+
+<script>
+const apiKey = "cad1abd3561dd54c287bf9efa93c02be";
+
+const cityInput = document.getElementById("city");
+const countryInput = document.getElementById("country");
+const suggestionsBox = document.getElementById("city-suggestions");
+let selectedCity = null; // salviamo città scelta con lat/lon
+
+// Funzione per cercare città via API OpenWeather Geocoding
+async function searchCities(query, countryCode) {
+  if (!query || query.length < 2) {
+    suggestionsBox.style.display = "none";
+    return [];
+  }
+
+  const url = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(query)},${countryCode}&limit=5&appid=${apiKey}`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!Array.isArray(data)) return [];
+    return data; // array di città con nome, state, country, lat, lon
+  } catch {
+    return [];
+  }
+}
+
+// Mostra suggerimenti città
+async function showSuggestions() {
+  const query = cityInput.value.trim();
+  const country = countryInput.value.trim().toUpperCase();
+
+  if (!country) {
+    suggestionsBox.style.display = "none";
+    return;
+  }
+
+  const cities = await searchCities(query, country);
+  if (cities.length === 0) {
+    suggestionsBox.style.display = "none";
+    return;
+  }
+
+  suggestionsBox.innerHTML = "";
+  cities.forEach(city => {
+    const name = city.name;
+    const state = city.state ? `, ${city.state}` : "";
+    const countryCode = city.country;
+    const div = document.createElement("div");
+    div.textContent = `${name}${state} (${countryCode})`;
+    div.onclick = () => {
+      cityInput.value = name;
+      selectedCity = city;
+      suggestionsBox.style.display = "none";
+    };
+    suggestionsBox.appendChild(div);
+  });
+  suggestionsBox.style.display = "block";
+}
+
+cityInput.addEventListener("input", showSuggestions);
+
+// Chiudi suggerimenti se clicchi fuori
+document.addEventListener("click", e => {
+  if (!e.target.closest(".input-wrapper")) {
+    suggestionsBox.style.display = "none";
+  }
+});
+
+// Gestione form submit
+document.getElementById("weatherForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!selectedCity || cityInput.value.trim().toLowerCase() !== selectedCity.name.toLowerCase()) {
+    alert("Seleziona una città dalla lista suggerita.");
+    return;
+  }
+
+  const days = parseInt(document.getElementById("days").value);
+  const startDate = new Date(document.getElementById("startDate").value);
+  if (isNaN(startDate)) {
+    alert("Inserisci una data valida");
+    return;
+  }
+
+  getForecast(selectedCity.lat, selectedCity.lon, days, startDate);
+});
+
+async function getForecast(lat, lon, days, startDate) {
+  const forecastDiv = document.getElementById("forecast");
+  forecastDiv.innerHTML = "Caricamento...";
+
+  try {
+    const res = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=it`);
+    const data = await res.json();
+
+    if (data.cod !== "200") throw new Error(data.message);
+
+    // Raggruppa per data (formato yyyy-mm-dd)
+    const daysMap = {};
+    data.list.forEach(item => {
+      const date = item.dt_txt.split(" ")[0];
+      if (!daysMap[date]) daysMap[date] = [];
+      daysMap[date].push(item);
+    });
+
+    // Costruiamo array di date richieste (max 5 giorni disponibili)
+    const datesWanted = [];
+    for (let i = 0; i < days; i++) {
+      const d = new Date(startDate);
+      d.setDate(d.getDate() + i);
+      const isoDate = d.toISOString().split("T")[0];
+      datesWanted.push(isoDate);
     }
 
-    getWeather();
-    setInterval(getWeather, 600000); // aggiorna ogni 10 minuti
-  </script>
+    forecastDiv.innerHTML = "";
+
+    // Mostra le previsioni solo per le date richieste e presenti
+    datesWanted.forEach(date => {
+      if (daysMap[date]) {
+        const dayData = daysMap[date];
+        // Prendi il dato ore 12 o metà giornata
+        const noonData = dayData.find(d => d.dt_txt.includes("12:00:00")) || dayData[Math.floor(dayData.length / 2)];
+        const temp = Math.round(noonData.main.temp);
+        const desc = noonData.weather[0].description;
+        const icon = noonData.weather[0].icon;
+        const dateStr = new Date(date).toLocaleDateString("it-IT", { weekday: 'long', day: 'numeric', month: 'short' });
+
+        forecastDiv.innerHTML += `
+        <div class="day">
+          <strong style="min-width: 80px; text-align: left;">${dateStr}</strong>
+          <img src="https://openweathermap.org/img/wn/${icon}@2x.png" alt="${desc}" style="width:40px; height:40px;">
+          <div style="min-width: 40px;">${temp}°C</div>
+          <div style="text-transform:capitalize; font-size: 0.85em; color:#ccc;">${desc}</div>
+        </div>
+      `;
+      }
+    });
+
+    if (forecastDiv.innerHTML === "") {
+      forecastDiv.innerHTML = "Nessuna previsione disponibile per le date selezionate.";
+    }
+  } catch (err) {
+    forecastDiv.textContent = "Errore: " + err.message;
+  }
+}
+
+// Imposta data di inizio a oggi come default
+document.getElementById("startDate").valueAsDate = new Date();
+
+</script>
 </body>
 </html>
