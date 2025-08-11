@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Meteo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #222;
+      color: white;
+      margin: 0;
+      padding: 20px;
+    }
+    .temp { font-size: 2.5em; margin-top: 10px; }
+    .desc { text-transform: capitalize; }
+  </style>
+</head>
+<body>
+  <h2>Meteo a Roma</h2>
+  <div class="temp" id="temp">-- °C</div>
+  <div class="desc" id="desc">Caricamento...</div>
+
+  <script>
+    const apiKey = "cad1abd3561dd54c287bf9efa93c02be";
+    const city = "Rome";
+    const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric&lang=it`;
+
+    async function getWeather() {
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        document.getElementById("temp").textContent = `${Math.round(data.main.temp)} °C`;
+        document.getElementById("desc").textContent = data.weather[0].description;
+      } catch (error) {
+        document.getElementById("desc").textContent = "Errore nel caricamento";
+      }
+    }
+
+    getWeather();
+    setInterval(getWeather, 600000); // aggiorna ogni 10 minuti
+  </script>
+</body>
+</html>
