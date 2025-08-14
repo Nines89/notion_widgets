@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<title>City Forecast</title>
+<style>
+  body { font-family: Arial, sans-serif; background:#222; color:#fff; text-align:center; padding:20px; }
+  .forecast {
+    display: flex;
+    flex-wrap: nowrap;
+    flex-direction: row;
+    gap: 12px;
+    justify-content: center;
+    padding-bottom: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: #5780d1 transparent;
+  }
+  .forecast::-webkit-scrollbar { height: 8px; }
+  .forecast::-webkit-scrollbar-thumb { background-color: #5780d1; border-radius: 4px; }
+  .day {
+    background: rgba(255,255,255,0.12);
+    padding: 8px 10px;
+    border-radius: 12px;
+    width: 95px;
+    box-shadow: 0 0 8px rgba(87,128,209,0.4);
+    user-select: none;
+    flex-shrink: 0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .day:hover { transform: scale(1.08); box-shadow: 0 0 12px rgba(87,128,209,0.7); }
+  .day strong { display: block; font-size: 0.85em; margin-bottom: 4px; text-transform: capitalize; }
+  .day img { width: 50px; height: 50px; margin-bottom: 6px; }
+  .day div { font-size: 0.9em; line-height: 1.2em; }
+</style>
+</head>
+<body>
+  <h2>Forecast</h2>
+  <div id="forecast" class="forecast">Loading...</div>
+
+<script>
+const apiKey = "cad1abd3561dd54c287bf9efa93c02be";
+
+// Impostazioni fisse
+const fixedCity = "Patti";
+const fixedCountry = "IT";
+const daysToShow = 5; // max 5
+const startDate = new Date(); // oggi
+
+// Ottieni coordinate della città
+async function getCityCoordinates(city, countryCode) {
+  const url = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(city)},${countryCode}&limit=1&appid=${apiKey}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  if (!data || !data[0]) throw new Error("City is not found");
+  return { lat: data[0].lat, lon: data[0].lon };
+}
+
+// Ottieni previsioni meteo
+async function getForecast(lat, lon, days, startDate) {
+  const forecastDiv = document.getElementById("forecast");
+  forecastDiv.innerHTML = "Loading...";
+
+  try {
+    const res = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=it`);
+    const data = await res.json();
+
+    if (data.cod !== "200") throw new Error(data.message);
+
+    const daysMap = {};
+    data.list.forEach(item => {
+      const date = item.dt_txt.split(" ")[0];
+      if (!daysMap[date]) daysMap[date] = [];
+      daysMap[date].push(item);
+    });
+
+    const datesWanted = [];
+    for (let i = 0; i < days; i++) {
+      const d = new Date(startDate);
+      d.setDate(d.getDate() + i);
+      datesWanted.push(d.toISOString().split("T")[0]);
+    }
+
+    forecastDiv.innerHTML = "";
+
+    datesWanted.forEach(date => {
+      if (daysMap[date]) {
+        const dayData = daysMap[date];
+        const noonData = dayData.find(d => d.dt_txt.includes("12:00:00")) || dayData[Math.floor(dayData.length / 2)];
+        const temp = Math.round(noonData.main.temp);
+        const desc = noonData.weather[0].description;
+        const icon = noonData.weather[0].icon;
+        const dateStr = new Date(date).toLocaleDateString("it-IT", { weekday: 'long', day: 'numeric', month: 'short' });
+
+        forecastDiv.innerHTML += `
+        <div class="day">
+          <strong>${dateStr}</strong>
+          <img src="https://openweathermap.org/img/wn/${icon}@2x.png" alt="${desc}">
+          <div>${temp}°C</div>
+          <div style="text-transform:capitalize; font-size:0.85em; color:#ccc;">${desc}</div>
+        </div>
+        `;
+      }
+    });
+
+    if (forecastDiv.innerHTML === "") {
+      forecastDiv.innerHTML = "No forecast available.";
+    }
+  } catch (err) {
+    forecastDiv.textContent = "Errore: " + err.message;
+  }
+}
+
+// Avvio automatico
+(async () => {
+  try {
+    const coords = await getCityCoordinates(fixedCity, fixedCountry);
+    getForecast(coords.lat, coords.lon, daysToShow, startDate);
+  } catch (err) {
+    document.getElementById("forecast").textContent = "Error: " + err.message;
+  }
+})();
+</script>
+</body>
+</html>
