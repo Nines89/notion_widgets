@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Travel Charts</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    form { margin-bottom: 10px; }
+    input { margin: 5px; }
+    button { margin: 5px; }
+    .charts { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+    .chart-box { background: #f9f9f9; padding: 10px; border-radius: 6px; }
+    canvas { display: block; }
+    .pies { display: flex; gap: 20px; }
+  </style>
+</head>
+<body>
+  <h2>Travel Data Form</h2>
+  <form id="travelForm">
+    <input type="text" id="name" placeholder="Travel name" required>
+    <input type="number" id="price" placeholder="Price (€)" required>
+    <input type="number" id="time" placeholder="Time (h)" required>
+    <button type="submit">Add Travel</button>
+  </form>
+  <button id="clearData">Clear All Data</button>
+  
+  <div class="charts">
+    <div class="chart-box">
+      <canvas id="barChart" width="450" height="300"></canvas>
+    </div>
+    <div class="pies">
+      <div class="chart-box">
+        <canvas id="pricePie" width="300" height="300"></canvas>
+      </div>
+      <div class="chart-box">
+        <canvas id="timePie" width="300" height="300"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById("travelForm");
+    const clearBtn = document.getElementById("clearData");
+
+    // Carico dati salvati o inizializzo array vuoti
+    let travels = JSON.parse(localStorage.getItem("travels")) || [];
+
+    // Configurazione grafici
+    const barCtx = document.getElementById("barChart").getContext("2d");
+    const pricePieCtx = document.getElementById("pricePie").getContext("2d");
+    const timePieCtx = document.getElementById("timePie").getContext("2d");
+
+    let barChart, pricePie, timePie;
+
+    function updateCharts() {
+      const labels = travels.map(t => t.name);
+      const prices = travels.map(t => t.price);
+      const times = travels.map(t => t.time);
+
+      if (barChart) barChart.destroy();
+      if (pricePie) pricePie.destroy();
+      if (timePie) timePie.destroy();
+
+      const maxPrice = Math.max(...prices) || 0;
+      const maxTime = Math.max(...times) || 0;
+
+      // Grafico a barre con due assi
+      barChart = new Chart(barCtx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            { 
+              label: 'Price (€)', 
+              data: prices, 
+              backgroundColor: 'rgba(54, 162, 235, 0.7)', 
+              yAxisID: 'yPrice' 
+            },
+            { 
+              label: 'Time (h)', 
+              data: times, 
+              backgroundColor: 'rgba(255, 159, 64, 0.7)', 
+              yAxisID: 'yTime' 
+            }
+          ]
+        },
+        options: { 
+          responsive: false, 
+          plugins: { 
+            title: { display: true, text: 'Price and Time per Travel' },
+            datalabels: {
+              anchor: 'end',
+              align: 'top',
+              formatter: (val, ctx) => val,
+              font: { weight: 'bold' }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  if (context.dataset.label.includes("Price")) {
+                    return `💰 ${context.formattedValue} €`;
+                  } else {
+                    return `⏱️ ${context.formattedValue} h`;
+                  }
+                }
+              }
+            }
+          },
+          scales: {
+            yPrice: { 
+              type: 'linear', 
+              position: 'left', 
+              beginAtZero: true, 
+              suggestedMax: maxPrice * 1.2,
+              title: { display: true, text: 'Price (€)' }
+            },
+            yTime: { 
+              type: 'linear', 
+              position: 'right', 
+              beginAtZero: true, 
+              suggestedMax: maxTime * 1.2,
+              title: { display: true, text: 'Time (h)' },
+              grid: { drawOnChartArea: false } // evita sovrapposizione con griglia
+            }
+          }
+        },
+        plugins: [ChartDataLabels]
+      });
+
+      // Torta Prezzi
+      pricePie = new Chart(pricePieCtx, {
+        type: 'pie',
+        data: {
+          labels: labels,
+          datasets: [{ data: prices, backgroundColor: ['#36A2EB', '#FF9F40', '#4BC0C0', '#9966FF', '#FF6384'] }]
+        },
+        options: { responsive: false, plugins: { title: { display: true, text: 'Price' } } }
+      });
+
+      // Torta Tempi
+      timePie = new Chart(timePieCtx, {
+        type: 'pie',
+        data: {
+          labels: labels,
+          datasets: [{ data: times, backgroundColor: ['#36A2EB', '#FF9F40', '#4BC0C0', '#9966FF', '#FF6384'] }]
+        },
+        options: { responsive: false, plugins: { title: { display: true, text: 'Time' } } }
+      });
+    }
+
+    // Gestione submit form
+    form.addEventListener("submit", function(e) {
+      e.preventDefault();
+      const name = document.getElementById("name").value;
+      const price = parseFloat(document.getElementById("price").value);
+      const time = parseFloat(document.getElementById("time").value);
+
+      travels.push({ name, price, time });
+      localStorage.setItem("travels", JSON.stringify(travels));
+      
+      form.reset();
+      updateCharts();
+    });
+
+    // Pulsante per cancellare tutto
+    clearBtn.addEventListener("click", function() {
+      travels = [];
+      localStorage.removeItem("travels");
+      updateCharts();
+    });
+
+    // Carico grafici iniziali
+    updateCharts();
+  </script>
+</body>
+</html>
