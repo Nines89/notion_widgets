@@ -38,13 +38,13 @@
     let barChart, pricePie, timePie;
 
     // URL CSV del Google Sheet pubblicato
-    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRl6k8GPHpqfvmIQLYdjZNmdcLo0JniZ-RyMP4ebUsuOb_S0l-euzL51oGtPZH3pO42XtIyr7qf8VR-/pub?output=csv";
+    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRl6k8GPHpqfvmIQLYdjZNmdcLo0JniZ-RyMP4ebUsuOb_S0l-euzL51oGtPZH3pO42XtIyr7qf8VR-/pub?output=tsv";
 
     function fetchSheetData() {
       fetch(csvUrl)
         .then(response => response.text())
         .then(csv => {
-          const rows = csv.trim().split("\n").map(r => r.split(","));
+          const rows = csv.trim().split("\n").map(r => r.split("\t"));
           const headers = rows[0];
           const dataRows = rows.slice(1);
 
