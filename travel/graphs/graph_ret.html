@@ -14,7 +14,7 @@
   </style>
 </head>
 <body>
-  <h2>Travel Data from Google Sheet</h2>
+  <h2>Return Data</h2>
   
   <div class="charts">
     <div class="chart-box">
@@ -38,7 +38,7 @@
     let barChart, pricePie, timePie;
 
     // URL CSV del Google Sheet pubblicato
-    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTegb2LJT0lax_1EnvlYgsVZ3ULnwD2jxtK5h8D-1e9lEEs-zug7uQMphLncM0X8NwUDYfurPrNIKep/pub?gid=0&single=true&output=csv";
+    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRl6k8GPHpqfvmIQLYdjZNmdcLo0JniZ-RyMP4ebUsuOb_S0l-euzL51oGtPZH3pO42XtIyr7qf8VR-/pub?output=csv";
 
     function fetchSheetData() {
       fetch(csvUrl)
