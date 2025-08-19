@@ -53,8 +53,8 @@
 
           const travels = dataRows.map(row => ({
             name: row[0],
-            price: parseFloat(row[1].replace(",", ".")),
-            time: parseFloat(row[2].replace(",", "."))
+            price: parseFloat(row[1]),
+            time: parseFloat(row[2])
           }));
 
           updateCharts(travels);
