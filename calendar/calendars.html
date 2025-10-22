@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Calendari Google - Embed</title>
+<style>
+  :root{
+    --bg:#ffffff;
+    --fg:#111;
+    --btn-bg:#efefef;
+    --btn-fg:#111;
+  }
+  html,body{height:100%;margin:0;font-family:system-ui,Arial,sans-serif;background:var(--bg);color:var(--fg)}
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0.5rem 1rem;
+    gap:1rem;
+    box-shadow:0 1px 0 rgba(0,0,0,0.06);
+    background:linear-gradient(0deg, transparent, transparent);
+  }
+  .title{font-size:1rem;font-weight:600}
+  .controls{display:flex;gap:.5rem;align-items:center}
+  .btn{
+    padding:.4rem .7rem;
+    border-radius:6px;
+    border:1px solid rgba(0,0,0,0.08);
+    background:var(--btn-bg);
+    color:var(--btn-fg);
+    cursor:pointer;
+    font-size:.9rem;
+  }
+  .container{max-width:1500px;margin:0 auto;padding:0.5rem}
+  .cal-grid{
+    display:flex;
+    gap:1rem;
+    flex-wrap:wrap;
+  }
+  .cal-item{
+    flex:1 1 250px;
+    display:flex;
+    flex-direction:column;
+  }
+  .cal-item h3{
+    margin:0 0.25rem 0.25rem 0.25rem;
+    font-size:1rem;
+    text-align:center;
+  }
+  iframe.calendar{
+    width:100%;
+    height:300px;
+    border:0;
+    background:transparent;
+    transition:filter .25s ease;
+  }
+  .dark{
+    --bg:#0b0b0b;
+    --fg:#e6e6e6;
+    --btn-bg:#1a1a1a;
+    --btn-fg:#e6e6e6;
+    background:var(--bg);
+    color:var(--fg);
+  }
+  .dark iframe.calendar{
+    filter: invert(1) hue-rotate(180deg) brightness(.95) contrast(1.05);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="topbar">
+    <div class="title">Calendari Google</div>
+    <div class="controls">
+      <button id="toggle" class="btn" title="Toggle tema scuro">Attiva tema scuro</button>
+    </div>
+  </div>
+
+  <div class="cal-grid">
+    <div class="cal-item">
+      <iframe class="calendar" src="https://calendar.google.com/calendar/embed?src=p.zanghi89%40gmail.com&ctz=Europe%2FRome&mode=AGENDA" loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+    </div>
+    <div class="cal-item">
+      <iframe class="calendar" src="https://calendar.google.com/calendar/embed?src=109031531b9358be40f2ac6282ee17fc6f530dadf1b457fda9f6223886ea7bd1%40group.calendar.google.com&ctz=Europe%2FRome&mode=AGENDA" loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+    </div>
+    <div class="cal-item">
+      <iframe class="calendar" src="https://calendar.google.com/calendar/embed?src=d3062a1b65a0237c07a1f4f215c948db108426cafc298d59fdef7846e0507df1%40group.calendar.google.com&ctz=Europe%2FRome&mode=AGENDA" loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+    </div>
+    <div class="cal-item">
+      <iframe class="calendar" src="https://calendar.google.com/calendar/embed?src=23c8c13888db7553822400ab01b3b58c426be507662289f46e67c84fb973dfbb%40group.calendar.google.com&ctz=Europe%2FRome&mode=AGENDA" loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const btn = document.getElementById('toggle');
+  const body = document.body;
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if(prefersDark) body.classList.add('dark');
+
+  function updateLabel(){
+    btn.textContent = body.classList.contains('dark') ? 'Disattiva tema scuro' : 'Attiva tema scuro';
+  }
+  btn.addEventListener('click', () => {
+    body.classList.toggle('dark');
+    updateLabel();
+  });
+  updateLabel();
+})();
+</script>
+</body>
+</html>
